@@ -1,208 +1,595 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta charset="utf-8" />
-<title>Screen In — QCM</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Screen In — QCM</title>
+  <style>
+    :root{
+      --bg:#0b1020;
+      --card:#121a33;
+      --text:#eaf0ff;
+      --muted:#a8b3d6;
+      --accent:#6ea8fe;
+      --danger:#ff6b6b;
+      --ok:#51cf66;
+      --border:rgba(255,255,255,.12);
+    }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", sans-serif;
+      background: radial-gradient(1200px 600px at 20% 0%, rgba(110,168,254,.25), transparent 55%),
+                  radial-gradient(900px 500px at 100% 20%, rgba(81,207,102,.18), transparent 50%),
+                  var(--bg);
+      color:var(--text);
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:24px;
+    }
+    .app{ width:min(920px, 100%); display:grid; gap:16px; }
+    header{ display:flex; align-items:flex-end; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+    h1{ margin:0; font-size: clamp(20px, 3vw, 30px); letter-spacing:.3px; }
+    .sub{ margin:6px 0 0; color:var(--muted); font-size: 14px; line-height:1.5; max-width:70ch; }
+    .panel{
+      background: linear-gradient(180deg, rgba(255,255,255,.06), transparent 40%), var(--card);
+      border:1px solid var(--border);
+      border-radius:16px;
+      padding:16px;
+      box-shadow: 0 12px 30px rgba(0,0,0,.35);
+    }
+    .chips{ display:flex; gap:8px; flex-wrap:wrap; }
+    .chip{ border:1px solid var(--border); color:var(--muted); padding:6px 10px; border-radius:999px; font-size:12px; }
+    .topbar{ display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+    .progress{
+      width:260px; max-width:100%;
+      height:10px; border-radius:999px;
+      border:1px solid var(--border);
+      overflow:hidden;
+      background: rgba(255,255,255,.05);
+    }
+    .bar{
+      height:100%; width:0%;
+      background: linear-gradient(90deg, var(--accent), rgba(110,168,254,.6));
+      transition: width .25s ease;
+    }
+    .msg{ min-height:22px; color:var(--muted); font-size:13px; line-height:1.5; }
+    .question{ margin-top:14px; display:grid; gap:14px; }
+    .qtext{ font-size:18px; line-height:1.55; margin:0; }
+    .answers{ display:grid; gap:10px; }
+    .btn{
+      width:100%;
+      text-align:left;
+      background: rgba(255,255,255,.04);
+      color:var(--text);
+      border:1px solid var(--border);
+      padding:12px 12px;
+      border-radius:12px;
+      cursor:pointer;
+      transition: transform .06s ease, background .15s ease, border-color .15s ease;
+      user-select:none;
+    }
+    .btn:hover{ background: rgba(255,255,255,.07); }
+    .btn:active{ transform: translateY(1px); }
+    .btn[disabled]{ opacity:.65; cursor:not-allowed; }
+    .btn.good{ border-color: rgba(81,207,102,.7); background: rgba(81,207,102,.12); }
+    .btn.bad{ border-color: rgba(255,107,107,.7); background: rgba(255,107,107,.12); }
 
-<style>
-body{
-  margin:0;
-  font-family: Arial, sans-serif;
-  background:#0b1020;
-  color:white;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  min-height:100vh;
-}
-.panel{
-  background:#121a33;
-  padding:20px;
-  border-radius:12px;
-  width:90%;
-  max-width:700px;
-}
-.screen{display:none;}
-.screen.active{display:block;}
-button{
-  padding:10px 15px;
-  margin-top:10px;
-  border:none;
-  border-radius:8px;
-  cursor:pointer;
-}
-.primary{background:#6ea8fe;color:black;font-weight:bold;}
-video{width:100%;border-radius:10px;}
+    .footer{ display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-top:10px; }
+    .controls{ display:flex; gap:10px; flex-wrap:wrap; }
+    .primary{
+      background: linear-gradient(90deg, rgba(110,168,254,.95), rgba(110,168,254,.65));
+      border-color: rgba(110,168,254,.55);
+      color:#081022;
+      font-weight:800;
+    }
+    .primary:hover{ background: linear-gradient(90deg, rgba(110,168,254,1), rgba(110,168,254,.72)); }
 
-.modalOverlay{
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,0.6);
-  display:none;
-  justify-content:center;
-  align-items:center;
-}
-.modalOverlay.active{display:flex;}
-.modal{
-  background:#121a33;
-  padding:20px;
-  border-radius:12px;
-  max-width:400px;
-}
-</style>
+    .screen{ display:none; }
+    .screen.active{ display:block; }
+
+    .big{ font-size:22px; margin:0; }
+    .hint{ color:var(--muted); margin:6px 0 0; font-size:14px; line-height:1.7; }
+    .typeBox{
+      margin-top:12px;
+      border:1px solid var(--border);
+      border-radius:14px;
+      padding:12px;
+      background: rgba(255,255,255,.04);
+    }
+    .typeTitle{ margin:0; font-weight:800; letter-spacing:.2px; }
+    .typeText{ margin:6px 0 0; color:var(--muted); line-height:1.7; }
+
+    video{
+      width:100%;
+      border-radius:14px;
+      border:1px solid var(--border);
+      background:#000;
+    }
+    .warn{
+      margin-top:10px;
+      color:var(--muted);
+      font-size:13px;
+      line-height:1.6;
+      border-left: 3px solid rgba(110,168,254,.65);
+      padding-left:10px;
+    }
+
+    /* modal warning */
+    .overlay{
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,.6);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:16px;
+      z-index:999;
+    }
+    .overlay.active{ display:flex; }
+    .modal{
+      width:min(520px, 100%);
+      background: linear-gradient(180deg, rgba(255,255,255,.06), transparent 40%), var(--card);
+      border:1px solid var(--border);
+      border-radius:16px;
+      padding:16px;
+      box-shadow: 0 16px 40px rgba(0,0,0,.5);
+    }
+    .modal h3{ margin:0 0 8px; font-size:18px; }
+    .modal p{ margin:0; color:var(--muted); line-height:1.6; }
+    .modal .controls{ margin-top:12px; }
+  </style>
 </head>
 
 <body>
+  <div class="app">
+    <header>
+      <div>
+        <h1>SCREEN IN — QCM</h1>
+        <p class="sub">
+          Objectif : montrer comment, à force de tout voir sur un écran (guerres, catastrophes…), notre sensibilité peut changer.<br>
+          Ce n’est pas un test moral. C’est une mise en évidence des mécanismes du cerveau et des habitudes de scroll.
+        </p>
+      </div>
+      <div class="chips">
+        <span class="chip" id="chipCount">Q : 0 / 10</span>
+        <span class="chip" id="chipScore">Score : 0</span>
+      </div>
+    </header>
 
-<div class="panel">
+    <!-- INTRO -->
+    <section class="panel screen active" id="introScreen">
+      <p class="big">Avant de commencer</p>
+      <p class="hint">
+        10 questions, 4 choix. <br>
+        Les “bonnes” réponses correspondent aux choix qui gardent le plus la “gravité du réel” (au lieu de banaliser).
+      </p>
+      <p class="warn">
+        ⚠️ Si tu ne veux pas continuer, tu peux arrêter à tout moment.<br>
+        Pour une expo, c’est plus juste d’offrir un choix “voir / ne pas voir” avant une vidéo forte.
+      </p>
+      <div class="controls" style="margin-top:12px;">
+        <button class="btn primary" id="startBtn">Commencer</button>
+      </div>
+    </section>
 
-<!-- INTRO -->
-<section class="screen active" id="introScreen">
-<h2>SCREEN IN</h2>
-<p>Réponds au quiz avant d’accéder à la vidéo.</p>
-<button class="primary" id="startBtn">Commencer</button>
-</section>
+    <!-- QUIZ -->
+    <section class="panel screen" id="quizScreen" aria-live="polite">
+      <div class="topbar">
+        <div class="progress" aria-label="progression">
+          <div class="bar" id="progressBar"></div>
+        </div>
+        <div class="msg" id="statusMsg">Choisis une réponse.</div>
+      </div>
 
-<!-- QUIZ -->
-<section class="screen" id="quizScreen">
-<h3 id="questionText"></h3>
-<div id="answers"></div>
-<p id="explanation"></p>
-<button id="nextBtn">Suivant</button>
-</section>
+      <div class="question">
+        <p class="qtext" id="questionText">Question…</p>
+        <div class="answers" id="answers"></div>
 
-<!-- RESULT -->
-<section class="screen" id="resultScreen">
-<h2>Résultat</h2>
-<p id="finalScore"></p>
-<button class="primary" id="toVideoBtn">Passer à la vidéo</button>
-<button id="retryBtn">Refaire le quiz</button>
-</section>
+        <div class="footer">
+          <div class="controls">
+            <button class="btn" id="nextBtn" disabled>Suivant</button>
+            <button class="btn" id="restartBtn">Recommencer</button>
+          </div>
+          <div class="msg" id="helperMsg">Après ta réponse, une explication apparaît.</div>
+        </div>
+      </div>
+    </section>
 
-<!-- VIDEO -->
-<section class="screen" id="videoScreen">
-<h2>Vidéo</h2>
-<video id="video" controls>
-  <source src="project.mp4" type="video/mp4">
-</video>
-<br>
-<button id="backToResultBtn">⛔ Retour</button>
-<button id="restartFromVideoBtn">Retour au début</button>
-</section>
+    <!-- RESULT -->
+    <section class="panel screen" id="resultScreen">
+      <p class="big" id="finalScore">Résultat : 0 / 10</p>
+      <p class="hint" id="resultHint"></p>
 
-</div>
+      <div class="typeBox">
+        <p class="typeTitle" id="typeTitle">Profil :</p>
+        <p class="typeText" id="typeText"></p>
+      </div>
 
-<!-- WARNING MODAL -->
-<div class="modalOverlay" id="videoWarnOverlay">
-  <div class="modal">
-    <h3>⚠️ Cette vidéo peut contenir des images choquantes</h3>
-    <p>Veux-tu continuer ?</p>
-    <button class="primary" id="confirmViewBtn">▶ Voir</button>
-    <button id="cancelViewBtn">⛔ Retour</button>
+      <div class="controls" style="margin-top:12px;">
+        <button class="btn primary" id="toVideoBtn">Passer à la vidéo</button>
+        <button class="btn" id="retryBtn">Refaire le QCM</button>
+      </div>
+    </section>
+
+    <!-- VIDEO (local file) -->
+    <section class="panel screen" id="videoScreen">
+      <p class="big">Partie vidéo</p>
+      <p class="hint">Cette vidéo fait partie du projet artistique.</p>
+
+      <video id="video" controls preload="metadata">
+        <source src="project.mp4" type="video/mp4" />
+        Votre navigateur ne supporte pas la vidéo.
+      </video>
+
+      <div class="controls" style="margin-top:12px;">
+        <button class="btn" id="backToResultBtn">⛔ Retour</button>
+        <button class="btn" id="restartFromVideoBtn">Retour au début</button>
+      </div>
+
+      <p class="warn">Tu peux arrêter la vidéo à tout moment.</p>
+    </section>
   </div>
-</div>
 
-<script>
-const QUIZ = [
- {text:"Pourquoi les images de guerre deviennent banales ?",choices:["On s’habitue","C’est faux","C’est drôle","On ne voit rien"],good:0},
- {text:"Que fait-on souvent après une vidéo choquante ?",choices:["On réfléchit","On scrolle","On agit","On pleure"],good:1}
-];
+  <!-- WARNING MODAL -->
+  <div class="overlay" id="videoWarnOverlay" role="dialog" aria-modal="true" aria-labelledby="warnTitle">
+    <div class="modal">
+      <h3 id="warnTitle">⚠️ Cette vidéo peut contenir des images choquantes</h3>
+      <p>Tu peux choisir de regarder ou de revenir au résultat.</p>
+      <div class="controls">
+        <button class="btn primary" id="confirmViewBtn">▶ Voir</button>
+        <button class="btn" id="cancelViewBtn">⛔ Retour</button>
+      </div>
+    </div>
+  </div>
 
-let state={index:0,score:0};
+  <script>
+    // =========================
+    // QCM (10 questions / 4 choix)
+    // goodIndex = choix le plus aligné avec la prise de conscience (sans culpabiliser)
+    // =========================
+    const QUIZ = [
+      {
+        text: "Q1. Après avoir vu une vidéo très choquante sur ton téléphone, la réaction la plus fréquente est…",
+        choices: [
+          "Plus rien ne te touche, instantanément",
+          "Une émotion forte, puis elle retombe vite",
+          "Tu passes immédiatement à l’action et tu ne t’arrêtes plus",
+          "Tu restes triste au même niveau pendant des heures"
+        ],
+        goodIndex: 1,
+        explain: "Le choc existe, mais le flux (scroll) coupe vite l’émotion : on passe à autre chose avant de comprendre."
+      },
+      {
+        text: "Q2. Pourquoi voir des images violentes peut réduire le sentiment de gravité avec le temps ?",
+        choices: [
+          "À force, on s’habitue (désensibilisation)",
+          "Le cerveau décide que tout est faux",
+          "Sur écran, on ne retient rien",
+          "Plus on voit, plus on devient forcément meilleur"
+        ],
+        goodIndex: 0,
+        explain: "La répétition crée l’habitude : c’est une protection… mais ça peut aussi banaliser le réel."
+      },
+      {
+        text: "Q3. Sur les réseaux, quand une scène de guerre/catastrophe apparaît, le comportement le plus courant est…",
+        choices: [
+          "Tout regarder et enquêter à fond",
+          "Être mal à l’aise puis scroller",
+          "Casser son téléphone de colère",
+          "Donner de l’argent immédiatement"
+        ],
+        goodIndex: 1,
+        explain: "Le malaise pousse souvent à éviter : ‘suivant’. Le réel se fait traiter comme un contenu parmi d’autres."
+      },
+      {
+        text: "Q4. Quel état est le plus dangereux pour la société ?",
+        choices: [
+          "Ne rien voir et être indifférent",
+          "Voir et être choqué longtemps",
+          "Voir et se dire ‘encore…’",
+          "Voir et agir immédiatement"
+        ],
+        goodIndex: 2,
+        explain: "‘Encore…’ = signe de banalisation. Quand l’émotion s’éteint, la violence devient “normale”."
+      },
+      {
+        text: "Q5. Dans quel cas la “distance” avec la réalité se casse le plus ?",
+        choices: [
+          "Vérifier le lieu et le contexte",
+          "Voir des blagues/mèmes dans les commentaires",
+          "Comparer plusieurs sources",
+          "Chercher la parole des personnes sur place"
+        ],
+        goodIndex: 1,
+        explain: "Les commentaires peuvent transformer un drame en “spectacle”. On perd la gravité du réel."
+      },
+      {
+        text: "Q6. Qu’est-ce qui rapproche le mieux un événement “sur écran” de quelque chose de réellement humain ?",
+        choices: [
+          "Le regarder en 4K",
+          "Connaître les noms, âges, vies des personnes",
+          "Lire les commentaires",
+          "Faire une capture d’écran"
+        ],
+        goodIndex: 1,
+        explain: "Passer de l’abstrait (guerre) au concret (une personne, une vie) redonne de l’empathie."
+      },
+      {
+        text: "Q7. Pourquoi une info tragique peut sembler “plus légère” sur un feed ?",
+        choices: [
+          "Parce que c’est toujours trop court",
+          "Parce que juste après, il y a du divertissement et des pubs",
+          "Parce que la police est jolie",
+          "Parce que l’écran est petit"
+        ],
+        goodIndex: 1,
+        explain: "Tragédie → vidéo drôle → pub : l’émotion est coupée. Le cerveau n’a plus le temps de “tenir” le réel."
+      },
+      {
+        text: "Q8. Pour une expo au collège, quelle approche est la plus juste et respectueuse ?",
+        choices: [
+          "Lancer une vidéo forte sans prévenir",
+          "Offrir un choix ‘voir / éviter’ avant la vidéo",
+          "Se moquer de ceux qui ont peur",
+          "Ne rien dire et laisser faire"
+        ],
+        goodIndex: 1,
+        explain: "Donner le choix augmente la force du message et évite la violence gratuite. C’est plus “pro”."
+      },
+      {
+        text: "Q9. Pourquoi ‘j’ai vu l’info’ ne se transforme pas en ‘j’ai compris’ ?",
+        choices: [
+          "Les gens sont froids",
+          "Trop d’infos : le cerveau se protège et évite",
+          "Le Wi-Fi est lent",
+          "Les profs font peur"
+        ],
+        goodIndex: 1,
+        explain: "L’excès d’infos déclenche une protection : on évite, on banalise, on scrolle."
+      },
+      {
+        text: "Q10. Le vrai but de ce projet, c’est surtout…",
+        choices: [
+          "Interdire les téléphones",
+          "Apprendre à traiter l’info avec la gravité du réel",
+          "Faire plus de buzz",
+          "Ne plus rien regarder"
+        ],
+        goodIndex: 1,
+        explain: "Interdire, ça crée juste de la résistance. Apprendre à “garder le réel” rend le message plus fort."
+      }
+    ];
 
-const introScreen=document.getElementById("introScreen");
-const quizScreen=document.getElementById("quizScreen");
-const resultScreen=document.getElementById("resultScreen");
-const videoScreen=document.getElementById("videoScreen");
+    // =========================
+    // State
+    // =========================
+    const state = { index: 0, score: 0, locked: false };
 
-const questionText=document.getElementById("questionText");
-const answers=document.getElementById("answers");
-const explanation=document.getElementById("explanation");
+    // =========================
+    // Elements
+    // =========================
+    const introScreen = document.getElementById("introScreen");
+    const quizScreen = document.getElementById("quizScreen");
+    const resultScreen = document.getElementById("resultScreen");
+    const videoScreen = document.getElementById("videoScreen");
 
-const startBtn=document.getElementById("startBtn");
-const nextBtn=document.getElementById("nextBtn");
-const retryBtn=document.getElementById("retryBtn");
-const toVideoBtn=document.getElementById("toVideoBtn");
+    const chipCount = document.getElementById("chipCount");
+    const chipScore = document.getElementById("chipScore");
 
-const backToResultBtn=document.getElementById("backToResultBtn");
-const restartFromVideoBtn=document.getElementById("restartFromVideoBtn");
-const videoEl=document.getElementById("video");
+    const progressBar = document.getElementById("progressBar");
+    const statusMsg = document.getElementById("statusMsg");
+    const helperMsg = document.getElementById("helperMsg");
 
-const videoWarnOverlay=document.getElementById("videoWarnOverlay");
-const confirmViewBtn=document.getElementById("confirmViewBtn");
-const cancelViewBtn=document.getElementById("cancelViewBtn");
+    const questionText = document.getElementById("questionText");
+    const answersEl = document.getElementById("answers");
 
-function show(screen){
- [introScreen,quizScreen,resultScreen,videoScreen].forEach(s=>s.classList.remove("active"));
- screen.classList.add("active");
-}
+    const startBtn = document.getElementById("startBtn");
+    const nextBtn = document.getElementById("nextBtn");
+    const restartBtn = document.getElementById("restartBtn");
 
-function renderQuestion(){
- const q=QUIZ[state.index];
- questionText.textContent=q.text;
- answers.innerHTML="";
- explanation.textContent="";
- q.choices.forEach((c,i)=>{
-   const btn=document.createElement("button");
-   btn.textContent=c;
-   btn.onclick=()=>{
-     if(i===q.good) state.score++;
-     explanation.textContent="Question suivante...";
-   };
-   answers.appendChild(btn);
- });
-}
+    const finalScore = document.getElementById("finalScore");
+    const resultHint = document.getElementById("resultHint");
+    const typeTitle = document.getElementById("typeTitle");
+    const typeText = document.getElementById("typeText");
 
-startBtn.onclick=()=>{
- show(quizScreen);
- renderQuestion();
-};
+    const retryBtn = document.getElementById("retryBtn");
+    const toVideoBtn = document.getElementById("toVideoBtn");
 
-nextBtn.onclick=()=>{
- state.index++;
- if(state.index<QUIZ.length){
-   renderQuestion();
- }else{
-   finalScore.textContent=`Score : ${state.score}/${QUIZ.length}`;
-   show(resultScreen);
- }
-};
+    const backToResultBtn = document.getElementById("backToResultBtn");
+    const restartFromVideoBtn = document.getElementById("restartFromVideoBtn");
+    const videoEl = document.getElementById("video");
 
-retryBtn.onclick=()=>{
- state.index=0;
- state.score=0;
- show(quizScreen);
- renderQuestion();
-};
+    const videoWarnOverlay = document.getElementById("videoWarnOverlay");
+    const confirmViewBtn = document.getElementById("confirmViewBtn");
+    const cancelViewBtn = document.getElementById("cancelViewBtn");
 
-toVideoBtn.onclick=()=>{
- videoWarnOverlay.classList.add("active");
-};
+    // =========================
+    // Screen control
+    // =========================
+    function show(screen){
+      [introScreen, quizScreen, resultScreen, videoScreen].forEach(s => s.classList.remove("active"));
+      screen.classList.add("active");
+    }
 
-confirmViewBtn.onclick=()=>{
- videoWarnOverlay.classList.remove("active");
- show(videoScreen);
-};
+    // =========================
+    // UI updates
+    // =========================
+    function updateHeader(){
+      chipCount.textContent = `Q : ${Math.min(state.index + 1, QUIZ.length)} / ${QUIZ.length}`;
+      chipScore.textContent = `Score : ${state.score}`;
+    }
 
-cancelViewBtn.onclick=()=>{
- videoWarnOverlay.classList.remove("active");
- show(resultScreen);
-};
+    function updateProgress(){
+      // after answering Q1 and moving to Q2, state.index = 1 => 10%
+      const pct = (state.index / QUIZ.length) * 100;
+      progressBar.style.width = `${pct}%`;
+    }
 
-backToResultBtn.onclick=()=>{
- videoEl.pause();
- videoEl.currentTime=0;
- show(resultScreen);
-};
+    function clearAnswers(){ answersEl.innerHTML = ""; }
 
-restartFromVideoBtn.onclick=()=>{
- videoEl.pause();
- videoEl.currentTime=0;
- state.index=0;
- state.score=0;
- show(introScreen);
-};
-</script>
+    // =========================
+    // Quiz rendering
+    // =========================
+    function renderQuestion(){
+      updateHeader();
+      updateProgress();
+      clearAnswers();
 
+      const q = QUIZ[state.index];
+      questionText.textContent = q.text;
+      statusMsg.textContent = "Choisis une réponse.";
+      helperMsg.textContent = "Après ta réponse, une explication apparaît.";
+      nextBtn.disabled = true;
+      state.locked = false;
+
+      q.choices.forEach((choice, i) => {
+        const btn = document.createElement("button");
+        btn.className = "btn";
+        btn.type = "button";
+        btn.textContent = choice;
+
+        btn.addEventListener("click", () => {
+          if (state.locked) return;
+          state.locked = true;
+
+          const isGood = i === q.goodIndex;
+          if (isGood){
+            btn.classList.add("good");
+            state.score += 1;
+            statusMsg.textContent = "OK (choix qui garde le plus la gravité du réel)";
+          } else {
+            btn.classList.add("bad");
+            statusMsg.textContent = "Choix compréhensible, mais il mène plus facilement à la banalisation.";
+          }
+
+          [...answersEl.querySelectorAll("button")].forEach(b => b.disabled = true);
+          helperMsg.textContent = "Explication : " + q.explain;
+          nextBtn.disabled = false;
+
+          updateHeader();
+        });
+
+        answersEl.appendChild(btn);
+      });
+    }
+
+    function showResults(){
+      progressBar.style.width = "100%";
+      finalScore.textContent = `Résultat : ${state.score} / ${QUIZ.length}`;
+
+      // Profils (pas un jugement : un miroir)
+      let title, text, hint;
+      if (state.score <= 3){
+        title = "Profil : ‘Scroll’ (ça passe, ça glisse)";
+        text  = "Tu peux être touché, mais le flux te reprend vite. Le réel devient un contenu parmi d’autres.";
+        hint  = "Piste : une fois, juste une fois, cherche le contexte (lieu, histoire) avant de scroller.";
+      } else if (state.score <= 6){
+        title = "Profil : ‘Attention à l’habitude’ (désensibilisation)";
+        text  = "Trop d’infos = le cerveau se protège. Ce n’est pas être ‘froid’, c’est une défense.";
+        hint  = "Piste : regarder avec un objectif (comprendre / vérifier / agir), pas juste consommer.";
+      } else {
+        title = "Profil : ‘Concrétiser’ (tu gardes le réel)";
+        text  = "Tu arrives mieux à traiter ce que tu vois comme une réalité humaine, pas comme un spectacle.";
+        hint  = "Étape suivante : la vidéo montre ce qui se passe quand la distance disparaît… ou quand elle se casse.";
+      }
+      typeTitle.textContent = title;
+      typeText.textContent = text;
+      resultHint.textContent = hint;
+
+      show(resultScreen);
+    }
+
+    // =========================
+    // Reset
+    // =========================
+    function resetAll(){
+      state.index = 0;
+      state.score = 0;
+      state.locked = false;
+
+      progressBar.style.width = "0%";
+      statusMsg.textContent = "";
+      helperMsg.textContent = "";
+      updateHeader();
+      clearAnswers();
+
+      try{ videoEl.pause(); videoEl.currentTime = 0; }catch(e){}
+      closeVideoWarning();
+      show(introScreen);
+    }
+
+    // =========================
+    // Video warning modal
+    // =========================
+    function openVideoWarning(){ videoWarnOverlay.classList.add("active"); }
+    function closeVideoWarning(){ videoWarnOverlay.classList.remove("active"); }
+
+    // click outside modal to close (optional)
+    videoWarnOverlay.addEventListener("click", (e) => {
+      if (e.target === videoWarnOverlay) closeVideoWarning();
+    });
+
+    // =========================
+    // Events
+    // =========================
+    startBtn.addEventListener("click", () => {
+      show(quizScreen);
+      renderQuestion();
+    });
+
+    nextBtn.addEventListener("click", () => {
+      if (state.index < QUIZ.length - 1){
+        state.index += 1;
+        renderQuestion();
+      } else {
+        showResults();
+      }
+    });
+
+    restartBtn.addEventListener("click", resetAll);
+
+    retryBtn.addEventListener("click", () => {
+      state.index = 0;
+      state.score = 0;
+      state.locked = false;
+      progressBar.style.width = "0%";
+      show(quizScreen);
+      renderQuestion();
+    });
+
+    // Results -> warning
+    toVideoBtn.addEventListener("click", () => {
+      openVideoWarning();
+    });
+
+    // warning -> video
+    confirmViewBtn.addEventListener("click", () => {
+      closeVideoWarning();
+      show(videoScreen);
+      // autoplay is often blocked; user presses play
+    });
+
+    // warning -> back to results
+    cancelViewBtn.addEventListener("click", () => {
+      closeVideoWarning();
+      show(resultScreen);
+    });
+
+    // Video -> results (stop video)
+    backToResultBtn.addEventListener("click", () => {
+      videoEl.pause();
+      videoEl.currentTime = 0;
+      show(resultScreen);
+    });
+
+    // Video -> intro (stop + reset)
+    restartFromVideoBtn.addEventListener("click", resetAll);
+
+    // init
+    updateHeader();
+  </script>
 </body>
 </html>
